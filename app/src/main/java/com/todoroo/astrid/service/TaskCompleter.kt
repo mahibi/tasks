@@ -2,6 +2,7 @@ package com.todoroo.astrid.service
 
 import android.app.NotificationManager.INTERRUPTION_FILTER_ALL
 import android.content.Context
+import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioAttributes.USAGE_NOTIFICATION_EVENT
 import android.media.RingtoneManager
@@ -103,6 +104,9 @@ class TaskCompleter @Inject internal constructor(
                 ?: computePreviousDueDate(task)
             localBroadcastManager.broadcastTaskCompleted(arrayListOf(task.id), oldDueDate)
         }
+
+        sendRewardPoints(tasks[0], completed)
+
         if (completed && notificationManager.currentInterruptionFilter == INTERRUPTION_FILTER_ALL) {
             preferences
                 .completionSound
@@ -117,6 +121,27 @@ class TaskCompleter @Inject internal constructor(
                         }
                         .play()
                 }
+        }
+    }
+
+    private fun sendRewardPoints(task: Task, completed: Boolean) {
+        val rewardValueString = task.title!!.substringAfterLast(" ")
+
+        var rewardValueInt: Int = try {
+            rewardValueString.toInt()
+        } catch (e: Exception) {
+            1
+        }
+
+        if (!completed) {
+            rewardValueInt *= -1
+        }
+
+        Intent().also { intent ->
+            intent.setAction("rewardPointsIntent")
+            intent.putExtra("rewardValue", rewardValueInt)
+            intent.putExtra("taskName", task.title)
+            context.sendBroadcast(intent)
         }
     }
 }
